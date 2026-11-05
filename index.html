@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="pt-BR"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Analisador de Xadrez</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/chess.js/0.10.3/chess.min.js"></script>
+<style>
+:root{--bg:#f3f0e8;--cd:#fff;--tx:#1d2125;--mu:#6b7280;--ln:#e2ddd0;--ac:#4f7a3a;--lt:#eeeed2;--dk:#769656;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media(prefers-color-scheme:dark){:root:not([data-theme=light]){--bg:#171613;--cd:#252320;--tx:#ecebe6;--mu:#a1a1aa;--ln:#3a3631}}
+:root[data-theme=dark]{--bg:#171613;--cd:#252320;--tx:#ecebe6;--mu:#a1a1aa;--ln:#3a3631}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.45 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:520px;margin:0 auto;padding:10px 12px 28px}
+header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+h1{font-size:19px;margin:0}
+button{font:inherit;color:inherit;cursor:pointer}
+.ic{background:var(--cd);border:1px solid var(--ln);border-radius:10px;height:40px;min-width:40px;padding:0 10px}
+.card{background:var(--cd);border:1px solid var(--ln);border-radius:14px;padding:12px 14px;margin:10px 0}
+textarea{width:100%;height:190px;font:16px/1.4 ui-monospace,Menlo,monospace;background:var(--bg);color:var(--tx);border:1px solid var(--ln);border-radius:10px;padding:10px;resize:vertical}
+.go{width:100%;margin-top:10px;height:50px;border:0;border-radius:12px;background:var(--ac);color:#fff;font-weight:700;font-size:17px}
+.mu{color:var(--mu);font-size:13px}
+#pt{margin:8px 0 0}
+#pgb{height:8px;border-radius:5px;background:var(--ln);overflow:hidden;margin-top:10px}
+#pb{height:100%;width:0;background:var(--ac);transition:width .3s}
+#hd{font-size:13px;color:var(--mu);margin:2px 2px 6px}
+#er{color:#ca3431;font-size:14px;margin-top:6px}
+#ebw{display:flex;align-items:center;gap:8px;margin:4px 0}
+#eb{flex:1;height:12px;border-radius:6px;background:#2b2b2b;overflow:hidden;border:1px solid var(--ln)}
+#ef{display:block;height:100%;width:50%;background:#f5f5f5;transition:width .6s cubic-bezier(.3,.9,.3,1)}
+#et{width:46px;text-align:right;font-weight:700;font-size:13px;font-variant-numeric:tabular-nums}
+#bw{position:relative;width:100%;max-width:480px;margin:8px auto;aspect-ratio:1;container-type:inline-size;touch-action:pan-y}
+#sq{position:absolute;inset:0;display:grid;grid-template-columns:repeat(8,1fr);border-radius:8px;overflow:hidden}
+#sq div{position:relative}
+.l{background:var(--lt)}.d{background:var(--dk)}
+#sq s,#sq u{position:absolute;font-size:2.4cqw;text-decoration:none;font-weight:700;opacity:.85}
+#sq s{left:.6cqw;top:.3cqw}#sq u{right:.6cqw;bottom:.2cqw}
+.l s,.l u{color:var(--dk)}.d s,.d u{color:var(--lt)}
+.hl::after{content:"";position:absolute;inset:0;background:rgba(255,214,0,.45);animation:fd .4s}
+#pc{position:absolute;inset:0;pointer-events:none}
+.p{position:absolute;left:0;top:0;width:12.5%;height:12.5%;display:flex;align-items:center;justify-content:center;font-size:9.6cqw;line-height:1;transition:transform .38s cubic-bezier(.25,.9,.3,1),opacity .3s}
+.p.w{color:#fff;-webkit-text-stroke:.35cqw #222}
+.p.b{color:#222;-webkit-text-stroke:.2cqw #000}
+#bg{position:absolute;width:5.4cqw;height:5.4cqw;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#fff;font:700 2.6cqw system-ui;border:.3cqw solid #fff;box-shadow:0 1px 4px #0006;z-index:5;transform:translate(-75%,-25%)}
+#bg.pop{animation:pop .5s cubic-bezier(.3,1.6,.5,1)}
+#bg.br{animation:pop .5s cubic-bezier(.3,1.6,.5,1),ring 1.1s .5s 2}
+@keyframes pop{from{transform:translate(-75%,-25%) scale(0)}to{transform:translate(-75%,-25%) scale(1)}}
+@keyframes ring{from{box-shadow:0 0 0 0 #1baca6}to{box-shadow:0 0 0 4cqw #1baca600}}
+@keyframes fd{from{opacity:0}}
+@keyframes up{from{opacity:0;transform:translateY(8px)}}
+.shake{animation:sh .45s}
+@keyframes sh{20%,60%{transform:translateX(-5px)}40%,80%{transform:translateX(5px)}}
+#ct{display:flex;gap:8px;justify-content:center}
+#ct button{flex:1;max-width:80px;height:48px;font-size:20px;background:var(--cd);border:1px solid var(--ln);border-radius:12px}
+#ct button:active{transform:scale(.93)}
+#ct #bp{background:var(--ac);color:#fff;border-color:var(--ac)}
+#ex.in{animation:up .3s}
+.ch{display:inline-flex;align-items:center;gap:8px;font-weight:700;margin-bottom:6px}
+.ch b{display:inline-flex;align-items:center;justify-content:center;min-width:28px;height:28px;padding:0 6px;border-radius:14px;background:var(--c);color:#fff;font-size:14px}
+#ex p{margin:2px 0 6px}
+#ml{max-height:150px;overflow-y:auto;position:relative;display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+#ml .n{color:var(--mu);font-size:13px;margin-left:6px}
+#ml button{display:inline-flex;align-items:center;gap:5px;height:34px;padding:0 9px;border:1px solid var(--ln);border-radius:9px;background:var(--bg);font-size:14px}
+#ml button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+#ml i{width:9px;height:9px;border-radius:50%}
+.sg{display:grid;grid-template-columns:1.4fr 1fr 1fr;gap:6px 8px;align-items:center;font-size:14px}
+.sg strong{font-size:22px}
+.sg .r{display:flex;align-items:center;gap:6px}
+.sg .r i{width:10px;height:10px;border-radius:50%}
+.sg h3{margin:0;font-size:14px;color:var(--mu)}
+.mo.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+select{font:16px system-ui;background:var(--bg);color:var(--tx);border:1px solid var(--ln);border-radius:8px;padding:6px}
+</style></head><body><main>
+<header><h1>♞ Analisador de Xadrez</h1><span><button class="ic" id="nw" hidden>Nova</button> <button class="ic" id="th">🌓</button></span></header>
+
+<section id="inp" class="card">
+<div class="mu" style="margin-bottom:8px">Cole o PGN (ou só os lances) da partida. Já deixei um exemplo: a famosa “Partida da Ópera”, de Morphy.</div>
+<textarea id="ta" spellcheck="false">[White "Paul Morphy"]
+[Black "Duque de Brunswick e Conde Isouard"]
+[Result "1-0"]
+
+1. e4 e5 2. Nf3 d6 3. d4 Bg4 4. dxe5 Bxf3 5. Qxf3 dxe5 6. Bc4 Nf6 7. Qb3 Qe7 8. Nc3 c6 9. Bg5 b5 10. Nxb5 cxb5 11. Bxb5+ Nbd7 12. O-O-O Rd8 13. Rxd7 Rxd7 14. Rd1 Qe6 15. Bxd7+ Nxd7 16. Qb8+ Nxb8 17. Rd8# 1-0</textarea>
+<div style="display:flex;gap:8px;margin-top:10px"><button class="ic mo on" data-m="sf" style="flex:1">♛ Stockfish</button><button class="ic mo" data-m="bi" style="flex:1">⚡ Motor básico</button></div>
+<label id="tl" class="mu" style="display:block;margin-top:8px">Tempo por lance <select id="tm"><option value="500">0,5 s (rápido)</option><option value="1000" selected>1 s (normal)</option><option value="2500">2,5 s (profundo)</option></select></label>
+<button class="go" id="gb">Analisar partida</button>
+<div id="er"></div>
+<div id="pg" hidden><div id="pgb"><div id="pb"></div></div><p id="pt" class="mu"></p></div>
+</section>
+
+<section id="an" hidden>
+<div id="hd"></div>
+<div id="ebw"><div id="eb"><i id="ef"></i></div><div id="et">0.0</div></div>
+<div id="bw"><div id="sq"></div><div id="pc"></div><div id="bg" hidden></div></div>
+<div id="ct"><button id="b0">⏮</button><button id="b1">◀</button><button id="bp">▶</button><button id="b2">▶︎</button><button id="b3">⏭</button><button id="bf">⇅</button></div>
+<div id="ex" class="card"></div>
+<div id="ml" class="card"></div>
+<div id="sm" class="card"></div>
+<p class="mu" id="fn"></p>
+</section>
+</main>
+<script>
+const $=s=>document.querySelector(s),ta=$('#ta'),bw=$('#bw'),sq=$('#sq'),pc=$('#pc'),ml=$('#ml');
+const V={p:100,n:320,b:330,r:500,q:900,k:0},N={p:'peão',n:'cavalo',b:'bispo',r:'torre',q:'dama',k:'rei'},A={p:'o',n:'o',b:'o',r:'a',q:'a',k:'o'},G={p:'♟',n:'♞',b:'♝',r:'♜',q:'♛',k:'♚'};
+const C={brilliant:['Brilhante','!!','#1baca6'],best:['Melhor','★','#81b64c'],excellent:['Excelente','!','#96bc4b'],good:['Bom','✓','#9aa37a'],book:['Livro','📖','#a88865'],inacc:['Imprecisão','?!','#e6b422'],mistake:['Erro','?','#e58f2a'],blunder:['Erro grave','??','#ca3431']};
+const BK=[["Abertura Italiana","e4 e5 Nf3 Nc6 Bc4 Bc5 c3 Nf6 d3"],["Ruy Lopez","e4 e5 Nf3 Nc6 Bb5 a6 Ba4 Nf6 O-O Be7"],["Defesa Siciliana","e4 c5 Nf3 d6 d4 cxd4 Nxd4 Nf6 Nc3 a6"],["Defesa Francesa","e4 e6 d4 d5 Nc3 Nf6 Bg5 Be7 e5"],["Defesa Caro-Kann","e4 c6 d4 d5 Nc3 dxe4 Nxe4 Bf5"],["Gambito da Dama","d4 d5 c4 e6 Nc3 Nf6 Bg5 Be7 e3 O-O"],["Defesa Índia do Rei","d4 Nf6 c4 g6 Nc3 Bg7 e4 d6 Nf3 O-O"],["Abertura Inglesa","c4 e5 Nc3 Nf6 Nf3 Nc6 g3 d5"],["Abertura Escocesa","e4 e5 Nf3 Nc6 d4 exd4 Nxd4 Nf6 Nxc6"],["Defesa Petrov","e4 e5 Nf3 Nf6 Nxe5 d6 Nf3 Nxe4 d4 d5"],["Defesa Philidor","e4 e5 Nf3 d6 d4 Bg4 dxe5 Bxf3 Qxf3 dxe5 Bc4 Nf6 Qb3 Qe7"],["Sistema Londres","d4 d5 Bf4 Nf6 e3 e6 Nf3 c5 c3 Nc6"],["Abertura Réti","Nf3 d5 g3 Nf6 Bg2 e6 O-O Be7"],["Gambito do Rei","e4 e5 f4 exf4 Nf3 g5 h4 g4 Ne5"],["Defesa Eslava","d4 d5 c4 c6 Nf3 Nf6 Nc3 dxc4"]];
+let F=[],M=[],R=[],K=[],W=[],cur=0,fl=false,els=new Map(),sqs={},T=0,tm=0,opn='';
+const wp=c=>50+50*(2/(1+Math.exp(-.00368*c))-1),tick=()=>new Promise(r=>setTimeout(r,0)),cap=s=>s[0].toUpperCase()+s.slice(1);
+const fm=c=>Math.abs(c)>9000?(c>0?'M+':'M−'):(c>0?'+':c<0?'−':'')+(Math.abs(c)/100).toFixed(1);
+
+/* ---------- motor ---------- */
+function ev(g){let s=0;g.board().forEach((row,r)=>row.forEach((x,c)=>{if(!x)return;const ct=7-Math.abs(c-3.5)-Math.abs(r-3.5);
+ let v=V[x.type]+(x.type==='p'?ct*3+(x.color==='w'?6-r:r-1)*6:'nb'.includes(x.type)?ct*5:'qr'.includes(x.type)?ct:0);s+=x.color==='w'?v:-v}));return g.turn()==='w'?s:-s}
+const sc=m=>(m.captured?10*V[m.captured]-V[m.piece]/10:0)+(m.promotion?800:0),mv=m=>({from:m.from,to:m.to,promotion:m.promotion});
+function qs(g,a,b,d){const e=ev(g);if(e>=b)return b;if(e>a)a=e;if(d<=0)return a;
+ for(const m of g.moves({verbose:true}).filter(m=>m.captured).sort((x,y)=>sc(y)-sc(x))){g.move(mv(m));const v=-qs(g,-b,-a,d-1);g.undo();if(v>=b)return b;if(v>a)a=v}return a}
+function ab(g,d,a,b,p){if(Date.now()>T)throw 1;if(d<=0)return qs(g,a,b,2);const L=g.moves({verbose:true});if(!L.length)return g.in_check()?p-1e4:0;
+ L.sort((x,y)=>sc(y)-sc(x));for(const m of L){g.move(mv(m));const v=-ab(g,d-1,-b,-a,p+1);g.undo();if(v>=b)return b;if(v>a)a=v}return a}
+function think(g,ms){const L=g.moves({verbose:true});if(!L.length)return{s:g.in_check()?-1e4:0,m:null};
+ L.sort((x,y)=>sc(y)-sc(x));T=Date.now()+ms;let res={s:0,m:L[0]};
+ for(let d=1;d<=5;d++){try{let a=-1e5,bm=L[0];for(const m of L){g.move(mv(m));const v=-ab(g,d-1,-1e5,-a,1);g.undo();if(v>a){a=v;bm=m}}
+  res={s:a,m:bm};L.splice(L.indexOf(bm),1);L.unshift(bm)}catch(e){break}}return res}
+
+/* ---------- Stockfish ---------- */
+let mode='sf',sfw=null;
+function loadSF(){return new Promise((ok,no)=>{try{
+ const w=new Worker(URL.createObjectURL(new Blob(['importScripts("https://cdnjs.cloudflare.com/ajax/libs/stockfish.js/10.0.2/stockfish.js")'],{type:'text/javascript'})));
+ const iv=setInterval(()=>w.postMessage('uci'),700),to=setTimeout(()=>{clearInterval(iv);w.terminate();no()},20000);
+ w.onerror=()=>{clearInterval(iv);clearTimeout(to);w.terminate();no()};
+ w.onmessage=e=>{if(String(e.data).includes('uciok')){clearInterval(iv);clearTimeout(to);w.onmessage=null;ok(w)}}}catch(e){no(e)}})}
+function sfThink(w,fen,ms){return new Promise(res=>{const g=new Chess(fen),L=g.moves({verbose:true});
+ if(!L.length)return res({s:g.in_check()?-1e4:0,m:null});
+ let s=0,d=0;const fin=v=>{if(!d){d=1;clearTimeout(to);res(v)}},to=setTimeout(()=>fin(think(new Chess(fen),380)),ms+12000);
+ w.onmessage=e=>{const t=String(e.data),c=t.match(/ score (cp|mate) (-?\d+)/);
+  if(t.startsWith('info')&&c&&!/bound/.test(t)){const v=+c[2];s=c[1]==='cp'?v:(v>0?1e4-v:-1e4-v)}
+  if(t.startsWith('bestmove')){const u=t.split(' ')[1];fin({s,m:L.find(x=>x.from+x.to+(x.promotion||'')===u)||L[0]})}};
+ w.postMessage('position fen '+fen);w.postMessage('go depth 16 movetime '+ms)})}
+
+/* ---------- análise ---------- */
+function bk(i){const s=M.slice(0,i+1).map(m=>m.san.replace(/[+#]/g,'')).join(' '),l=BK.find(b=>b[1]===s||b[1].startsWith(s+' '));return l&&l[0]}
+async function run(){
+ const g=new Chess(),er=$('#er');
+ if(!g.load_pgn(ta.value.trim(),{sloppy:true})||!g.history().length){er.textContent='Não consegui ler esse PGN. Cole os lances, ex.: 1. e4 e5 2. Nf3 Nc6';return}
+ er.textContent='';$('#gb').disabled=true;
+ const H=g.history({verbose:true}).slice(0,120),hd=g.header(),r=new Chess(hd.FEN||undefined);
+ F=[r.fen()];M=[];H.forEach(h=>{M.push(r.move({from:h.from,to:h.to,promotion:h.promotion}));F.push(r.fen())});
+ R=[];$('#pg').hidden=false;let sf=mode==='sf';if(sf){$('#pt').textContent='Carregando o Stockfish…';try{sfw=sfw||await loadSF();sfw.postMessage('ucinewgame')}catch(e){sf=false}}$('#fn').textContent=sf?'Motor: Stockfish 10 (JavaScript), rodando no seu aparelho.':(mode==='sf'?'Não consegui carregar o Stockfish neste ambiente, então usei o motor básico (notas aproximadas).':'Motor básico rodando no seu aparelho: as notas são aproximadas.');
+ for(let j=0;j<F.length;j++){$('#pb').style.width=(j/F.length*100)+'%';$('#pt').textContent=`Analisando posição ${j+1} de ${F.length}…`;await tick();R[j]=sf?await sfThink(sfw,F[j],+$('#tm').value):think(new Chess(F[j]),380)}
+ W=F.map((f,j)=>f.split(' ')[1]==='w'?R[j].s:-R[j].s);opn='';K=[];
+ M.forEach((m,i)=>{const SB=R[i].s,SP=-R[i+1].s,loss=Math.max(0,wp(SB)-wp(SP)),bm=R[i].m,op=i<20&&bk(i);let k;
+  if(op){k='book';opn=op}else{
+   const g0=new Chess(F[i]);g0.move(mv(m));const rep=g0.moves({verbose:true}).filter(x=>x.captured&&x.to===m.to);
+   const sac=!m.promotion&&'pk'.indexOf(m.piece)<0&&V[m.piece]-(m.captured?V[m.captured]:0)>=200&&rep.some(x=>V[x.piece]<V[m.piece]);
+   k=sac&&loss<=2&&SP>-150&&(SB<800||SB>9000)?'brilliant':(bm&&bm.san===m.san)||loss<.5?'best':loss<=2?'excellent':loss<=5?'good':loss<=10?'inacc':loss<=20?'mistake':'blunder'}
+  K.push({k,loss:op?0:loss,op})});
+ $('#hd').textContent=`${hd.White||'Brancas'} vs ${hd.Black||'Pretas'}${hd.Result?' · '+hd.Result:''}${opn?' · '+opn:''}`;
+ ml.innerHTML=M.map((m,i)=>`${i%2?'':`<span class=n>${(i>>1)+1}.</span>`}<button data-j="${i+1}"><i style="background:${C[K[i].k][2]}"></i>${m.san}</button>`).join('');
+ summary();$('#inp').hidden=true;$('#an').hidden=false;$('#nw').hidden=false;$('#gb').disabled=false;$('#pg').hidden=true;
+ buildSq();els.forEach(e=>e.remove());els=new Map();go(0)}
+
+/* ---------- explicações ---------- */
+function ph(m){
+ if(m.flags.includes('k'))return 'o rei faz o roque pequeno: fica protegido e a torre entra em jogo';
+ if(m.flags.includes('q'))return 'o rei faz o roque grande: fica protegido e a torre entra em jogo';
+ let s=`${A[m.piece]} ${N[m.piece]} `+(m.captured?`captura ${m.flags.includes('e')?'o peão (en passant)':A[m.captured]+' '+N[m.captured]} em ${m.to}`:`vai para ${m.to}`);
+ if(m.promotion)s+=` e promove para ${N[m.promotion]}`;
+ if(!m.captured&&'nb'.includes(m.piece)&&(m.from[1]==='1'||m.from[1]==='8'))s+=', desenvolvendo a peça';
+ else if(m.piece==='p'&&/^[de][45]$/.test(m.to))s+=', ocupando o centro';
+ if(m.san.includes('#'))s+=' e dá xeque-mate!';else if(m.san.includes('+'))s+=' com xeque';
+ return s}
+function ex(i){const m=M[i],c=K[i],b=R[i].m,nb=R[i+1]&&R[i+1].m;let t=cap(ph(m))+'.';
+ if(c.k==='book')t+=` Lance teórico${c.op?' da '+c.op:''}: jogada conhecida e segura.`;
+ else if(c.k==='brilliant')t+=` Você sacrifica ${A[m.piece]} ${N[m.piece]} em ${m.to}! Parece perder material, mas o motor mostra que o lance mantém a vantagem e cria ameaças fortes.`;
+ else if(c.k==='best')t+=' É o lance preferido do motor.';
+ else if(c.k==='excellent'||c.k==='good')t+=` Lance sólido, mas o motor preferia <b>${b.san}</b>.`;
+ else{t+=nb&&nb.captured&&V[nb.captured]>=300?` Isso permite ${nb.san}, e você perde ${A[nb.captured]} ${N[nb.captured]}.`:nb&&/[+#]/.test(nb.san)?` Isso dá ao adversário ${nb.san}.`:' Você cede parte da vantagem.';
+  if(b)t+=` O melhor era <b>${b.san}</b>: ${ph(b)}.`}
+ return t}
+function summary(){
+ const f=c=>{const a=K.filter((_,i)=>M[i].color===c),l=a.reduce((s,x)=>s+x.loss,0)/(a.length||1);return{a,acc:Math.max(0,Math.min(100,103.1668*Math.exp(-.04354*l)-3.1669))}};
+ const w=f('w'),b=f('b');let h=`<div class=sg><h3>Resumo</h3><h3>Brancas</h3><h3>Pretas</h3><span>Precisão</span><strong>${w.acc.toFixed(0)}%</strong><strong>${b.acc.toFixed(0)}%</strong>`;
+ for(const k in C){const x=w.a.filter(y=>y.k===k).length,y=b.a.filter(z=>z.k===k).length;if(x+y)h+=`<span class=r><i style="background:${C[k][2]}"></i>${C[k][0]}</span><span>${x}</span><span>${y}</span>`}
+ $('#sm').innerHTML=h+'</div>'}
+
+/* ---------- tabuleiro ---------- */
+const xy=s=>{const c=s.charCodeAt(0)-97,r=8-s[1];return fl?[7-c,7-r]:[c,r]};
+function buildSq(){sq.innerHTML='';sqs={};for(let r=0;r<8;r++)for(let c=0;c<8;c++){const f=fl?7-c:c,k=fl?7-r:r,n='abcdefgh'[f]+(8-k),d=document.createElement('div');
+ d.className=(f+k)%2?'d':'l';d.innerHTML=(c===0?`<s>${8-k}</s>`:'')+(r===7?`<u>${'abcdefgh'[f]}</u>`:'');sq.append(d);sqs[n]=d}}
+function place(el,s){const[c,r]=xy(s);el.style.transform=`translate(${c*100}%,${r*100}%)`}
+function draw(j){
+ const want=new Map(),old=new Map(els),nw=new Map(),need=[];
+ new Chess(F[j]).board().forEach((row,r)=>row.forEach((x,c)=>x&&want.set('abcdefgh'[c]+(8-r),x)));
+ want.forEach((x,s)=>{const o=old.get(s),k=x.color+x.type;if(o&&o.dataset.k===k){nw.set(s,o);old.delete(s)}else need.push([s,k])});
+ need.forEach(([s,k])=>{let bs=null,bd=99;old.forEach((o,t)=>{if(o.dataset.k===k){const d=Math.abs(t.charCodeAt(0)-s.charCodeAt(0))+Math.abs(t[1]-s[1]);if(d<bd){bd=d;bs=t}}});
+  let el;if(bs){el=old.get(bs);old.delete(bs)}else{el=document.createElement('div');el.className='p '+k[0];el.dataset.k=k;el.textContent=G[k[1]]+'\uFE0E';el.style.opacity=0;place(el,s);pc.append(el);
+   requestAnimationFrame(()=>requestAnimationFrame(()=>el.style.opacity=1))}
+  place(el,s);nw.set(s,el)});
+ old.forEach(o=>{o.style.opacity=0;o.style.transform+=' scale(.3)';setTimeout(()=>o.remove(),380)});els=nw}
+function go(j){j=Math.max(0,Math.min(M.length,j));cur=j;draw(j);
+ Object.values(sqs).forEach(s=>s.classList.remove('hl'));const bg=$('#bg'),e=$('#ex');bg.hidden=true;bw.classList.remove('shake');
+ if(j>0){const m=M[j-1],c=K[j-1],cc=C[c.k],[x,y]=xy(m.to);sqs[m.from].classList.add('hl');sqs[m.to].classList.add('hl');
+  bg.style.left=(x+1)*12.5+'%';bg.style.top=y*12.5+'%';bg.style.background=cc[2];bg.textContent=cc[1];bg.hidden=false;bg.className='';void bg.offsetWidth;bg.className=c.k==='brilliant'?'br':'pop';
+  if(c.k==='blunder'){void bw.offsetWidth;bw.classList.add('shake')}
+  e.innerHTML=`<div class=ch style="--c:${cc[2]}"><b>${cc[1]}</b>${m.san} · ${cc[0]}</div><p>${ex(j-1)}</p><div class=mu>Avaliação ${fm(W[j])}${c.loss>=5?` · −${c.loss.toFixed(0)}% de chance de vitória`:''}</div>`}
+ else e.innerHTML='<div class=ch><b style="--c:#999">♞</b>Posição inicial</div><p>Toque em ▶ para ver cada lance com a nota e a explicação. Deslize no tabuleiro para avançar ou voltar.</p>';
+ e.classList.remove('in');void e.offsetWidth;e.classList.add('in');
+ $('#ef').style.width=wp(W[j])+'%';$('#et').textContent=fm(W[j]);
+ ml.querySelectorAll('button').forEach(b=>b.classList.toggle('on',+b.dataset.j===j));
+ const on=ml.querySelector('.on');if(on)ml.scrollTo({top:on.offsetTop-ml.clientHeight/2,behavior:'smooth'})}
+function play(){if(tm){clearInterval(tm);tm=0;$('#bp').textContent='▶';return}if(cur>=M.length)go(0);$('#bp').textContent='⏸';tm=setInterval(()=>{if(cur>=M.length)play();else go(cur+1)},1500)}
+
+/* ---------- eventos ---------- */
+$('#gb').onclick=run;
+document.querySelectorAll('.mo').forEach(b=>b.onclick=()=>{mode=b.dataset.m;document.querySelectorAll('.mo').forEach(x=>x.classList.toggle('on',x===b));$('#tl').hidden=mode!=='sf'});
+$('#nw').onclick=()=>{if(tm)play();$('#an').hidden=true;$('#inp').hidden=false;$('#nw').hidden=true};
+$('#b0').onclick=()=>go(0);$('#b1').onclick=()=>go(cur-1);$('#b2').onclick=()=>go(cur+1);$('#b3').onclick=()=>go(M.length);$('#bp').onclick=play;
+$('#bf').onclick=()=>{fl=!fl;buildSq();els.forEach((e,s)=>place(e,s));go(cur)};
+ml.onclick=e=>{const b=e.target.closest('button');if(b)go(+b.dataset.j)};
+let tx=0;bw.ontouchstart=e=>tx=e.touches[0].clientX;bw.ontouchend=e=>{const d=e.changedTouches[0].clientX-tx;if(Math.abs(d)>40)go(cur+(d<0?1:-1))};
+onkeydown=e=>{if(e.target.tagName==='TEXTAREA'||$('#an').hidden)return;if(e.key==='ArrowRight')go(cur+1);if(e.key==='ArrowLeft')go(cur-1)};
+$('#th').onclick=()=>{const r=document.documentElement,d=r.dataset.theme?r.dataset.theme==='dark':matchMedia('(prefers-color-scheme:dark)').matches;r.dataset.theme=d?'light':'dark'};
+</script></body></html>
